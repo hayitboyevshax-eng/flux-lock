@@ -33,7 +33,8 @@ class _UnlockPanelState extends State<UnlockPanel> {
 
   Future<void> _load() async {
     final a = await _sec.hasPin, b = await _sec.hasPattern;
-    if (mounted) setState(() => (_hasPin, _hasPat) = (a, b));
+    if (!mounted) return;
+    setState(() { _hasPin = a; _hasPat = b; });
   }
 
   bool get _has => _pattern ? _hasPat : _hasPin;
