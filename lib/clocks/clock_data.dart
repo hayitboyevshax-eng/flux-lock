@@ -26,6 +26,6 @@ class ClockData {
   // intl orqali tizim tiliga mos hafta kuni va sana
   String get weekday => DateFormat.EEEE(locale).format(now);
   String get date => DateFormat.yMMMMd(locale).format(now);
-  String get period => use24h ? '' : DateFormat.a(locale).format(now);
+  String get period => use24h ? '' : DateFormat('a', locale).format(now);
   double get secondProgress => (now.second + now.millisecond / 1000) / 60;
 }
