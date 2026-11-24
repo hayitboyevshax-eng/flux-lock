@@ -1,44 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-import 'core/clock_settings.dart';
-import 'core/security_service.dart';
-import 'ui/lock_screen.dart';
+import 'l10n/app_l10n.dart';
+import 'models/settings_controller.dart';
+import 'screens/clock_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  final settings = await ClockSettings.load();
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: settings),
-        Provider(create: (_) => SecurityService()),
-      ],
-      child: const FluxLockApp(),
-    ),
-  );
+  await initializeDateFormatting();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  final settings = await SettingsController.load();
+  runApp(LuxClockApp(settings: settings));
 }
 
-class FluxLockApp extends StatelessWidget {
-  const FluxLockApp({super.key});
+class LuxClockApp extends StatelessWidget {
+  const LuxClockApp({super.key, required this.settings});
+  final SettingsController settings;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flux Lock',
-      theme: ThemeData(brightness: Brightness.dark, useMaterial3: true),
-      supportedLocales: const [Locale('uz'), Locale('en'), Locale('ru')],
+      onGenerateTitle: (c) => AppL10n.of(c).appName,
+      theme: ThemeData.dark(useMaterial3: true),
       localizationsDelegates: const [
+        AppL10n.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: const LockScreen(),
+      supportedLocales: AppL10n.supported,
+      // Tizim tili uz/en/ru bo'lmasa — avtomatik Ingliz tili
+      localeResolutionCallback: (locale, supported) {
+        if (locale != null) {
+          for (final s in supported) {
+            if (s.languageCode == locale.languageCode) return s;
+          }
+        }
+        return const Locale('en');
+      },
+      home: ClockScreen(settings: settings),
     );
   }
 }

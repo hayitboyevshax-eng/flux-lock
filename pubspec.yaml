@@ -1,28 +1,19 @@
-name: flux_lock
-description: Premium depth-effect lock screen (ColorOS / HyperOS style)
+name: lux_clock
+description: Premium multilingual digital clock
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  flutter_localizations:       # lokalizatsiya (uz / en / ru)
+  flutter_localizations:
     sdk: flutter
-  provider: ^6.1.2             # state management
-  shared_preferences: ^2.3.2   # soat sozlamalari
-  flutter_secure_storage: ^9.2.2 # PIN / pattern hash
-  crypto: ^3.0.5               # SHA-256
-  local_auth: ^2.3.0           # barmoq izi
-  flutter_animate: ^4.5.0      # animatsiyalar
-  camera: ^0.11.0+2            # face unlock (fon rejimi)
-  google_mlkit_face_detection: ^0.11.0
-  google_mlkit_commons: any
-  permission_handler: ^11.3.1
+  intl: any
+  google_fonts: ^6.2.1
+  shared_preferences: ^2.2.3
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/wallpapers/   # w1..w5 (.jpg) va w1..w5_fg (.webp) depth fonlar

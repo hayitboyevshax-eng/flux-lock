@@ -1,60 +1,105 @@
-name: Build APK
+name: Build Lux Clock
 
 on:
   push:
     branches: [main, master]
-    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  build:
+  android:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Java 21
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - name: Generate Android scaffold (if missing)
+      - name: Android/iOS papkalarini yaratish
         run: |
-          if [ ! -d android ]; then
-            flutter create . --platforms=android --org com.fluxlock --project-name flux_lock
-          fi
-          rm -f test/widget_test.dart
+          flutter create . --org com.example --project-name lux_clock --platforms=android,ios
+          rm -rf test
 
-      - name: Patch Android (permissions, minSdk, activity)
-        run: python3 tool/patch_android.py
+      - name: Android sozlamalarini qo'llash (ilova nomi, tillar)
+        run: |
+          cp -r android_config/app/src/main/res/. android/app/src/main/res/
+          cp android_config/app/src/main/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
 
-      - name: Install dependencies
-        run: flutter pub get
+      - run: flutter pub get
 
-      - name: Build release APK
+      - name: APK build
         run: flutter build apk --release
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: flux-lock-apk
+          name: lux_clock-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
 
-      - name: Publish GitHub Release (on tag)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
         with:
-          files: build/app/outputs/flutter-apk/app-release.apk
+          channel: stable
+          cache: true
+
+      - name: Android/iOS papkalarini yaratish
+        run: |
+          flutter create . --org com.example --project-name lux_clock --platforms=android,ios
+          rm -rf test
+
+      - name: iOS Info.plist sozlamalari
+        run: |
+          P=ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDevelopmentRegion en" $P
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName 'Lux Clock'" $P
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleLocalizations" $P 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleLocalizations array" $P
+          /usr/libexec/PlistBuddy -c "Add :CFBundleLocalizations: string en" $P
+          /usr/libexec/PlistBuddy -c "Add :CFBundleLocalizations: string uz" $P
+          /usr/libexec/PlistBuddy -c "Add :CFBundleLocalizations: string ru" $P
+
+      - name: InfoPlist.strings fayllarini Xcode loyihasiga qo'shish
+        run: |
+          for l in en uz ru; do
+            mkdir -p ios/Runner/$l.lproj
+            cp ios_config/$l.lproj/InfoPlist.strings ios/Runner/$l.lproj/
+          done
+          sudo gem install xcodeproj --no-document
+          ruby -e '
+            require "xcodeproj"
+            proj = Xcodeproj::Project.open("ios/Runner.xcodeproj")
+            target = proj.targets.find { |t| t.name == "Runner" }
+            group = proj.main_group["Runner"]
+            variant = group.new_variant_group("InfoPlist.strings")
+            %w[en uz ru].each do |l|
+              variant.new_reference("#{l}.lproj/InfoPlist.strings")
+            end
+            target.resources_build_phase.add_file_reference(variant)
+            proj.root_object.known_regions = %w[en uz ru Base]
+            proj.save
+          '
+
+      - run: flutter pub get
+
+      - name: iOS build (imzosiz)
+        run: flutter build ios --release --no-codesign
+
+      - name: .app ni arxivlash
+        run: |
+          cd build/ios/iphoneos
+          zip -qr ../../../lux_clock-ios.zip Runner.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lux_clock-ios-unsigned
+          path: lux_clock-ios.zip

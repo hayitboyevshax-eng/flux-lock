@@ -1,0 +1,13 @@
+<!-- ios/Runner/Info.plist ichidagi <dict> ga shularni qo'shing/almashtiring -->
+<key>CFBundleDevelopmentRegion</key>
+<string>en</string>
+<key>CFBundleDisplayName</key>
+<string>Lux Clock</string>
+<key>CFBundleName</key>
+<string>lux_clock</string>
+<key>CFBundleLocalizations</key>
+<array>
+    <string>en</string>
+    <string>uz</string>
+    <string>ru</string>
+</array>
